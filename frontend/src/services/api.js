@@ -150,11 +150,13 @@ export class Room {
 }
 
 export class User {
-  constructor ({ id, name, emailAddress, photoURL }) {
+  constructor ({ id, name, emailAddress, photoURL, databaseKey, sessionID }) {
     this.id = id
     this.name = name
     this.emailAddress = emailAddress
     this.photoURL = photoURL // not implemented
+    this.databaseKey = databaseKey // only for currentUser
+    this.sessionID = sessionID // only for currentUser
   }
 
   static async list () {
@@ -163,7 +165,7 @@ export class User {
 
   static async createAccount ({ emailAddress, password, name }) {
     const preDerivedPassword = await preDerivePassword(password, emailAddress)
-    const { user: { id } } = await apiClient.rest.account.create({
+    const { user: { id }, databaseKey, sessionID } = await apiClient.rest.account.create({
       emailAddress,
       password: preDerivedPassword,
       name
@@ -171,31 +173,37 @@ export class User {
     currentUser = new this({
       id,
       emailAddress,
-      name
+      name,
+      databaseKey,
+      sessionID
     })
     return currentUser
   }
 
   static async login ({ emailAddress, password }) {
     const preDerivedPassword = await preDerivePassword(password, emailAddress)
-    const { user: { id, name } } = await apiClient.rest.account.login({
+    const { user: { id, name }, databaseKey, sessionID } = await apiClient.rest.account.login({
       emailAddress,
       password: preDerivedPassword
     })
     currentUser = new this({
       id,
       emailAddress,
-      name
+      name,
+      databaseKey,
+      sessionID
     })
     return currentUser
   }
 
   static async updateCurrentUser () {
-    const { user: { id, emailAddress, name } } = await apiClient.rest.account.status()
+    const { user: { id, emailAddress, name }, databaseKey, sessionID } = await apiClient.rest.account.status()
     currentUser = new this({
       id,
       emailAddress,
-      name
+      name,
+      databaseKey,
+      sessionID
     })
     return currentUser
   }
