@@ -1,11 +1,13 @@
 const crypto = require('crypto')
 const util = require('util')
 const express = require('express')
+const { generateSignupJWT } = require('../utils')
 const { logout } = require('../middlewares/authentication')
 const { createAccountValidator, loginValidator } = require('../validators/account')
 const { authenticate, isAuthenticatedMiddleware } = require('../middlewares/authentication')
 const { ValidationError, User } = require('../models')
 const { validate } = require('express-validation')
+const { settings } = require('../config.js')
 
 const randomBytes = util.promisify(crypto.randomBytes)
 
@@ -50,7 +52,8 @@ router.post('/', validate(createAccountValidator), async (req, res, next) => {
     res.json({
       user: user.serialize(),
       databaseKey: req.session.databaseKey,
-      sessionID: req.sessionID
+      sessionID: req.sessionID,
+      signupJWT: await generateSignupJWT(settings.JWT_SHARED_SECRET, settings.JWT_SHARED_SECRET_ID, user.id)
     })
   } catch (err) {
     if (err instanceof ValidationError) res.status(400).json({ detail: 'A user with the same email address exists' })

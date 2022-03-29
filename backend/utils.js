@@ -1,5 +1,8 @@
+const jose = require('jose')
+const { v4: UUID } = require('uuid')
 const crypto = require('crypto')
 const { promisify } = require('util')
+const { settings } = require('./config.js')
 
 const randomBytes = promisify(crypto.randomBytes)
 const scrypt = promisify(crypto.scrypt)
@@ -23,4 +26,19 @@ const parseHashedPassword = hashedPassword => {
   }
 }
 
-module.exports = { hashPassword, parseHashedPassword }
+const generateSignupJWT = async (JWTSharedSecret, JWTSharedSecretId, userId) => {
+  const token = new jose.SignJWT({
+    iss: JWTSharedSecretId,
+    jti: UUID(), // So the JWT is only usable once. The `random` generates a random string, with enough entropy to never repeat : a UUIDv4 would be a good choice.
+    iat: Math.floor(Date.now() / 1000), // Validité limitée à 10 minutes. `Date.now()` donne la date en millisecondes, il faut la date en secondes.
+    join_team: true,
+    connector_add: {
+      value: `${userId}@${settings.APP_ID}`,
+      type: 'AP'
+    }
+  })
+    .setProtectedHeader({ alg: 'HS256' })
+  return token.sign(Buffer.from(JWTSharedSecret, 'ascii'))
+}
+
+module.exports = { hashPassword, parseHashedPassword, generateSignupJWT }

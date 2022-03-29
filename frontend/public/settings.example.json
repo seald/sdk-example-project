@@ -1,7 +1,5 @@
 {
   "APPLICATION_SALT": "change_me",
-  "JWT_SHARED_SECRET_ID": "change_me",
-  "JWT_SHARED_SECRET": "change_me",
   "APP_ID": "change_me",
   "API_URL": "https://api.seald.io/",
   "KEY_STORAGE_URL": "https://ssks.seald.io/"

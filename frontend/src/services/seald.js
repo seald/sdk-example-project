@@ -19,14 +19,8 @@ const instantiateSealdSDK = async ({ databaseKey, sessionID }) => {
 
 export const getSealdSDKInstance = () => sealdSDKInstance
 
-export const createIdentity = async ({ userId, password, databaseKey, sessionID }) => {
+export const createIdentity = async ({ userId, password, databaseKey, sessionID, signupJWT }) => {
   await instantiateSealdSDK({ databaseKey, sessionID })
-
-  const JWTSharedSecret = await getSetting('JWT_SHARED_SECRET')
-  const JWTSharedSecretId = await getSetting('JWT_SHARED_SECRET_ID')
-
-  await instantiateSealdSDK({ databaseKey, sessionID })
-  const signupJWT = await sealdSDKInstance.utils.generateRegistrationJWT(JWTSharedSecret, JWTSharedSecretId, { joinTeam: true, userId }) // TODO: must be done from the backend
 
   await sealdSDKInstance.initiateIdentity({ signupJWT })
   await sealdSDKInstance.ssksPassword.saveIdentity({ userId, password })

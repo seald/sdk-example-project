@@ -71,7 +71,8 @@ function SignUp () {
           userId: currentUser.id,
           password,
           databaseKey: currentUser.databaseKey,
-          sessionID: currentUser.sessionID
+          sessionID: currentUser.sessionID,
+          signupJWT: currentUser.signupJWT
         })
         dispatch({ type: SET_AUTH, payload: { currentUser } })
         dispatch({

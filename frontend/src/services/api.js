@@ -150,13 +150,14 @@ export class Room {
 }
 
 export class User {
-  constructor ({ id, name, emailAddress, photoURL, databaseKey, sessionID }) {
+  constructor ({ id, name, emailAddress, photoURL, databaseKey, sessionID, signupJWT }) {
     this.id = id
     this.name = name
     this.emailAddress = emailAddress
     this.photoURL = photoURL // not implemented
     this.databaseKey = databaseKey // only for currentUser
     this.sessionID = sessionID // only for currentUser
+    this.signupJWT = signupJWT // only for currentUser, and on sign-up only
   }
 
   static async list () {
@@ -165,7 +166,7 @@ export class User {
 
   static async createAccount ({ emailAddress, password, name }) {
     const preDerivedPassword = await preDerivePassword(password, emailAddress)
-    const { user: { id }, databaseKey, sessionID } = await apiClient.rest.account.create({
+    const { user: { id }, databaseKey, sessionID, signupJWT } = await apiClient.rest.account.create({
       emailAddress,
       password: preDerivedPassword,
       name
@@ -175,7 +176,8 @@ export class User {
       emailAddress,
       name,
       databaseKey,
-      sessionID
+      sessionID,
+      signupJWT
     })
     return currentUser
   }
