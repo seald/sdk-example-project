@@ -1,7 +1,5 @@
 /* eslint-env browser */
 import { io } from 'socket.io-client'
-import { hashPassword } from '../utils'
-import getSetting from '../settings'
 
 // APIClient for REST API & IO API
 const APIClient = baseURL => {
@@ -46,6 +44,7 @@ const APIClient = baseURL => {
         status: () => GET('/account'),
         create: body => POST('/account', body),
         login: body => POST('/account/login', body),
+        sendChallenge2MR: body => POST('/account/sendChallenge2MR', body),
         logout: () => GET('/account/logout')
       },
       rooms: {
@@ -98,11 +97,6 @@ const unwrapHandler = (socket, eventName, payload) => new Promise((resolve, reje
     else reject(new Error(response?.error ? response.error : 'An unknown error happened'))
   })
 })
-
-const preDerivePassword = async (password, userId) => {
-  const fixedString = await getSetting('APPLICATION_SALT')
-  return hashPassword(password, `${fixedString}|${userId}`)
-}
 
 let currentUser = null
 
@@ -165,10 +159,9 @@ export class User {
   }
 
   static async createAccount ({ emailAddress, password, name }) {
-    const preDerivedPassword = await preDerivePassword(password, emailAddress)
     const { user: { id }, databaseKey, sessionID, signupJWT } = await apiClient.rest.account.create({
       emailAddress,
-      password: preDerivedPassword,
+      password,
       name
     })
     currentUser = new this({
@@ -183,10 +176,9 @@ export class User {
   }
 
   static async login ({ emailAddress, password }) {
-    const preDerivedPassword = await preDerivePassword(password, emailAddress)
     const { user: { id, name }, databaseKey, sessionID } = await apiClient.rest.account.login({
       emailAddress,
-      password: preDerivedPassword
+      password
     })
     currentUser = new this({
       id,
@@ -196,6 +188,10 @@ export class User {
       sessionID
     })
     return currentUser
+  }
+
+  static async sendChallenge2MR () {
+    return (await apiClient.rest.account.sendChallenge2MR())
   }
 
   static async updateCurrentUser () {
