@@ -36,12 +36,12 @@ export const retrieveIdentityFromLocalStorage = async ({ databaseKey, sessionID 
   }
 }
 
-export const saveIdentity2MR = async ({ userId, twoManRuleKey, emailAddress, twoManRuleSessionId, challenge }) => {
+export const saveIdentity2MR = async ({ userId, twoManRuleKey, phoneNumber, twoManRuleSessionId, challenge }) => {
   await sealdSDKInstance.ssks2MR.saveIdentity({
     challenge,
     authFactor: {
-      type: 'EM',
-      value: emailAddress
+      type: 'SMS',
+      value: phoneNumber
     },
     twoManRuleKey,
     userId,
@@ -53,13 +53,13 @@ export const sendChallenge2MR = async () => {
   return User.sendChallenge2MR()
 }
 
-export const retrieveIdentity2MR = async ({ userId, emailAddress, twoManRuleKey, twoManRuleSessionId, challenge, databaseKey, sessionID }) => {
+export const retrieveIdentity2MR = async ({ userId, phoneNumber, twoManRuleKey, twoManRuleSessionId, challenge, databaseKey, sessionID }) => {
   await instantiateSealdSDK({ databaseKey, sessionID })
   await sealdSDKInstance.ssks2MR.retrieveIdentity({
     challenge,
     authFactor: {
-      type: 'EM',
-      value: emailAddress
+      type: 'SMS',
+      value: phoneNumber
     },
     twoManRuleKey,
     userId,
