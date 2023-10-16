@@ -67,8 +67,9 @@ function SignUp () {
         setIsLoading(true)
         const emailAddress = formData.get('emailAddress')
         const password = formData.get('password')
+        const phoneNumber = formData.get('phoneNumber')
         const name = formData.get('name')
-        const currentUser = await User.createAccount({ emailAddress, password, name })
+        const currentUser = await User.createAccount({ emailAddress, password, phoneNumber, name })
         const sealdId = await createIdentity({
           databaseKey: currentUser.databaseKey,
           sessionID: currentUser.sessionID,
@@ -81,13 +82,14 @@ function SignUp () {
           setChallengeSession({
             twoManRuleSessionId,
             twoManRuleKey,
-            emailAddress
+            emailAddress,
+            phoneNumber
           })
           console.log('session set')
         } else {
           await saveIdentity2MR({
             userId: currentUser.id,
-            emailAddress,
+            phoneNumber,
             twoManRuleKey,
             twoManRuleSessionId,
             challenge: undefined
@@ -120,7 +122,7 @@ function SignUp () {
         const challenge = formData.get('challenge')
         await saveIdentity2MR({
           userId: currentUser.id,
-          emailAddress: challengeSession.emailAddress,
+          phoneNumber: challengeSession.phoneNumber,
           twoManRuleKey: challengeSession.twoManRuleKey,
           twoManRuleSessionId: challengeSession.twoManRuleSessionId,
           challenge
@@ -173,6 +175,16 @@ function SignUp () {
           margin='normal'
           required
           fullWidth
+          name='phoneNumber'
+          label='phone number'
+          type='tel'
+          id='phoneNumber'
+        />
+        <TextField
+          variant='outlined'
+          margin='normal'
+          required
+          fullWidth
           name='name'
           label='Display name'
           type='text'
@@ -193,7 +205,7 @@ function SignUp () {
     return (
       <form className={classes.form} onSubmit={handleChallengeSubmit}>
         <Typography>
-          You received an OTP at {challengeSession.emailAddress}
+          You received an OTP at {challengeSession.phoneNumber}
         </Typography>
         <TextField
           variant='outlined'

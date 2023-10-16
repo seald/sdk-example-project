@@ -142,11 +142,12 @@ export class Room {
 }
 
 export class User {
-  constructor ({ id, name, emailAddress, photoURL, databaseKey, sessionID, signupJWT, sealdId }) {
+  constructor ({ id, name, emailAddress, phoneNumber, photoURL, databaseKey, sessionID, signupJWT, sealdId }) {
     this.id = id
     this.sealdId = sealdId
     this.name = name
     this.emailAddress = emailAddress
+    this.phoneNumber = phoneNumber
     this.photoURL = photoURL // not implemented
     this.databaseKey = databaseKey // only for currentUser
     this.sessionID = sessionID // only for currentUser
@@ -157,15 +158,17 @@ export class User {
     return (await apiClient.rest.users.list()).users.map(u => new this(u))
   }
 
-  static async createAccount ({ emailAddress, password, name }) {
+  static async createAccount ({ emailAddress, password, phoneNumber, name }) {
     const { user: { id }, databaseKey, sessionID, signupJWT } = await apiClient.rest.account.create({
       emailAddress,
       password,
+      phoneNumber,
       name
     })
     currentUser = new this({
       id,
       emailAddress,
+      phoneNumber,
       name,
       databaseKey,
       sessionID,
@@ -180,13 +183,14 @@ export class User {
   }
 
   static async login ({ emailAddress, password }) {
-    const { user: { id, name }, databaseKey, sessionID } = await apiClient.rest.account.login({
+    const { user: { id, name, phoneNumber }, databaseKey, sessionID } = await apiClient.rest.account.login({
       emailAddress,
       password
     })
     currentUser = new this({
       id,
       emailAddress,
+      phoneNumber,
       name,
       databaseKey,
       sessionID
@@ -199,10 +203,11 @@ export class User {
   }
 
   static async updateCurrentUser () {
-    const { user: { id, emailAddress, name, sealdId }, databaseKey, sessionID } = await apiClient.rest.account.status()
+    const { user: { id, emailAddress, name, phoneNumber, sealdId }, databaseKey, sessionID } = await apiClient.rest.account.status()
     currentUser = new this({
       id,
       emailAddress,
+      phoneNumber,
       name,
       sealdId,
       databaseKey,

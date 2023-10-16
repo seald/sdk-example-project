@@ -76,6 +76,7 @@ function SignIn () {
         setCurrentUser(currentUser)
         setChallengeSession({
           twoManRuleSessionId,
+          phoneNumber: currentUser.phoneNumber,
           emailAddress,
           twoManRuleKey
         })
@@ -97,7 +98,7 @@ function SignIn () {
         const challenge = formData.get('challenge')
         const { sealdId } = await retrieveIdentity2MR({
           userId: currentUser.id,
-          emailAddress: challengeSession.emailAddress,
+          phoneNumber: challengeSession.phoneNumber,
           twoManRuleKey: challengeSession.twoManRuleKey,
           twoManRuleSessionId: challengeSession.twoManRuleSessionId,
           challenge,
@@ -164,7 +165,7 @@ function SignIn () {
     return (
       <form className={classes.form} onSubmit={handleChallengeSubmit}>
         <Typography>
-          You received an OTP at {challengeSession.emailAddress}
+          You received an OTP at {challengeSession.phoneNumber}
         </Typography>
         <TextField
           variant='outlined'

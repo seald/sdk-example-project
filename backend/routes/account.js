@@ -52,10 +52,10 @@ router.post('/sendChallenge2MR', isAuthenticatedMiddleware, async (req, res, nex
         create_user: createUser,
         user_id: user.id,
         auth_factor: {
-          type: 'EM',
-          value: user.emailAddress.normalize('NFKC').replace(/ /g, '').toLowerCase()
+          type: 'SMS',
+          value: user.phoneNumber
         },
-        template: '<html><body>Challenge: $$CHALLENGE$$</body></html>'
+        template: 'Challenge: $$CHALLENGE$$'
       })
     }
     )
@@ -87,8 +87,8 @@ router.get('/logout', isAuthenticatedMiddleware, async (req, res, next) => {
 
 router.post('/', validate(createAccountValidator), async (req, res, next) => {
   try {
-    const { emailAddress, password, name } = req.body
-    const user = await User.create({ emailAddress, password, name })
+    const { emailAddress, password, phoneNumber, name } = req.body
+    const user = await User.create({ emailAddress, password, phoneNumber, name })
     await authenticate(req, user)
     req.session.databaseKey = (await randomBytes(64)).toString('base64')
     res.json({
