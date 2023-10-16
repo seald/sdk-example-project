@@ -1,5 +1,7 @@
+const jose = require('jose')
 const crypto = require('crypto')
 const { promisify } = require('util')
+const { settings } = require('./config.js')
 
 const randomBytes = promisify(crypto.randomBytes)
 const scrypt = promisify(crypto.scrypt)
@@ -23,4 +25,26 @@ const parseHashedPassword = hashedPassword => {
   }
 }
 
-module.exports = { hashPassword, parseHashedPassword }
+const randomString = (length = 10) => randomBytes(length)
+  .then(randomBytes => randomBytes
+    .toString('base64')
+    .replace(/[^a-z0-9]/gi, '')
+    .slice(0, length)
+  )
+
+const generateSignupJWT = async (userId) => {
+  const token = new jose.SignJWT({
+    iss: settings.JWT_SHARED_SECRET_ID,
+    jti: await randomString(), // So the JWT is only usable once.
+    iat: Math.floor(Date.now() / 1000), // JWT valid only for 10 minutes. `Date.now()` returns the timestamp in milliseconds, this needs it in seconds.
+    join_team: true,
+    connector_add: {
+      value: `${userId}@${settings.APP_ID}`,
+      type: 'AP'
+    }
+  })
+    .setProtectedHeader({ alg: 'HS256' })
+  return token.sign(Buffer.from(settings.JWT_SHARED_SECRET, 'ascii'))
+}
+
+module.exports = { hashPassword, parseHashedPassword, generateSignupJWT }

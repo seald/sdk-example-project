@@ -1,3 +1,4 @@
+/* eslint-env browser */
 import React, { useEffect, useRef, useState } from 'react'
 import { IconButton, CircularProgress } from '@mui/material'
 import makeStyles from '@mui/styles/makeStyles'
@@ -13,7 +14,7 @@ const useStyles = makeStyles(theme => ({
   }
 }))
 
-const UploadButton = ({ room }) => {
+const UploadButton = ({ room, sealdSession }) => {
   const classes = useStyles()
   const [isUploading, setIsUploading] = useState(false)
   const [selectedFiles, setSelectedFiles] = useState([])
@@ -24,8 +25,15 @@ const UploadButton = ({ room }) => {
       if (selectedFiles[0]) {
         setIsUploading(true)
         try {
-          // Upload selectedFile[0]
-          const { uploadId } = await uploadFile(selectedFiles[0])
+          // Encrypt file
+          const encryptedBlob = await sealdSession.encryptFile(
+            selectedFiles[0],
+            selectedFiles[0].name,
+            { fileSize: selectedFiles[0].size }
+          )
+          const encryptedFile = new File([encryptedBlob], selectedFiles[0].name)
+          // Upload Encrypted file
+          const { uploadId } = await uploadFile(encryptedFile)
           // Send message to room
           await room.postMessage('--FILE--', uploadId)
         } finally {

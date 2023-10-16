@@ -17,6 +17,7 @@ import Copyright from '../components/Copyright'
 import { Room, User } from '../services/api'
 import { SET_AUTH, SET_ROOMS } from '../stores/reducer/constants.js'
 import { SocketContext } from '../stores/SocketContext.jsx'
+import { retrieveIdentity } from '../services/seald'
 
 const useStyles = makeStyles(theme => ({
   paper: {
@@ -69,6 +70,8 @@ function SignIn () {
         const emailAddress = formData.get('emailAddress')
         const password = formData.get('password')
         const currentUser = await User.login({ emailAddress, password })
+        const { sealdId } = await retrieveIdentity({ userId: currentUser.id, password })
+        currentUser.sealdId = sealdId
         dispatch({ type: SET_AUTH, payload: { currentUser } })
         dispatch({
           type: SET_ROOMS,

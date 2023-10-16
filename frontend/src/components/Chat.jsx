@@ -1,4 +1,4 @@
-import React, { memo, useContext, useEffect } from 'react'
+import React, { memo, useContext, useEffect, useRef } from 'react'
 import { Navigate } from 'react-router-dom'
 import {
   Avatar,
@@ -23,6 +23,7 @@ import { SocketContext } from '../stores/SocketContext'
 import GroupAvatar from './GroupAvatar'
 import Message from './Message'
 import UploadButton from './UploadButton'
+import { getSealdSDKInstance } from '../services/seald'
 
 const useStyles = makeStyles(theme => ({
   root: {
@@ -64,6 +65,7 @@ const useStyles = makeStyles(theme => ({
 
 function Chat ({ roomId: currentRoomId }) {
   const classes = useStyles()
+  const sealdSessionRef = useRef(null)
   const { enqueueSnackbar } = useSnackbar()
   const [{ currentUser, users, rooms, socket }, dispatch] = useContext(SocketContext)
   const [state, setState] = useImmer({
@@ -76,8 +78,36 @@ function Chat ({ roomId: currentRoomId }) {
     isLoading: true
   })
 
+  const decryptMessage = async m => {
+    // If message is a --FILE--, encryptedMessage does not contains an encrypted message
+    if (m.encryptedMessage === '--FILE--') return { ...m, message: '--FILE--' }
+    try {
+      if (!sealdSessionRef.current) { // no encryption session set in cache yet
+        // we try to get it by parsing the current message
+        sealdSessionRef.current = await getSealdSDKInstance().retrieveEncryptionSession({ encryptedMessage: m.encryptedMessage })
+        // now that we have a session loaded, let's decrypt
+      }
+      const decryptedMessage = await sealdSessionRef.current.decryptMessage(m.encryptedMessage)
+      // we have successfully decrypted the message
+      return {
+        ...m,
+        message: decryptedMessage
+      }
+    } catch (error) {
+      // an error happened, it means that:
+      // 1. the encryptedMessage is corrupted;
+      // 2. the SDK does not have the rights to decrypt;
+      // 3. a random network error happened
+      console.error('failed decryption of', m.encryptedMessage, ' with error:', error, 'skipping decryption')
+      return {
+        ...m,
+        message: 'CLEAR ' + m.encryptedMessage
+      }
+    }
+  }
+
   const serializeMessage = m => ({
-    message: m.content,
+    encryptedMessage: m.content,
     uploadId: m.uploadId,
     uploadFileName: m.uploadFileName,
     timestamp: m.createdAt,
@@ -105,11 +135,13 @@ function Chat ({ roomId: currentRoomId }) {
               draft.users = users.filter(u => currentRoom.users.includes(u.id))
               draft.messages = []
             })
-
+            sealdSessionRef.current = null
             const messages = (await currentRoom.getMessages()).map(serializeMessage)
 
+            const clearMessages = await Promise.all(messages.map(decryptMessage))
+
             setState(draft => {
-              draft.messages = [...messages]
+              draft.messages = [...clearMessages]
               draft.isLoading = false
             })
           }
@@ -161,7 +193,8 @@ function Chat ({ roomId: currentRoomId }) {
       payload: {
         room: state.room,
         name: state.room.name,
-        selectedUsers: state.room.users
+        selectedUsers: state.room.users,
+        sealdSession: sealdSessionRef.current
       }
     })
   }
@@ -172,7 +205,12 @@ function Chat ({ roomId: currentRoomId }) {
       enqueueSnackbar('Please select a room or create a new one', { variant: 'error' })
     } else if (state.message.trim()) {
       try {
-        await state.room.postMessage(state.message)
+        if (!sealdSessionRef.current) {
+          sealdSessionRef.current = await getSealdSDKInstance().createEncryptionSession({ sealdIds: state.room.users.map(u => u.sealdId) }, { metadata: state.room.id })
+        }
+        const encryptedMessage = await sealdSessionRef.current.encryptMessage(state.message)
+
+        await state.room.postMessage(encryptedMessage)
 
         setState(draft => {
           draft.message = ''
@@ -185,12 +223,15 @@ function Chat ({ roomId: currentRoomId }) {
   }
 
   useEffect(() => {
-    const listener = payload => {
+    const listener = async payload => {
       if (currentRoomId === payload.roomId) {
         const message = serializeMessage(payload)
+
+        const clearMessage = await decryptMessage(message)
+
         setState(draft => {
           if (!draft.messages.find(m => m.id === payload.id)) {
-            draft.messages = [...draft.messages, message]
+            draft.messages = [...draft.messages, clearMessage]
           }
         })
       }
@@ -297,7 +338,7 @@ function Chat ({ roomId: currentRoomId }) {
                     <Avatar className={classes.smallAvatar} sizes='small' src={sender.photoURL} />
                   </Tooltip>
                 )}
-                <Message isCurrentUser={isCurrentUser} value={m.message} uploadId={m.uploadId} uploadFileName={m.uploadFileName} />
+                <Message isCurrentUser={isCurrentUser} value={m.message} uploadId={m.uploadId} uploadFileName={m.uploadFileName} sealdSession={sealdSessionRef.current} />
               </Box>
             </Box>
           )
@@ -306,7 +347,7 @@ function Chat ({ roomId: currentRoomId }) {
       <Box p={2} style={{ paddingBottom: 4, paddingTop: 4 }} flexShrink={0} bgcolor='grey.100'>
         <form noValidate onSubmit={handleSubmitMessage}>
           <FormControl disabled={state.isLoading} className={classes.formControl} variant='filled'>
-            <UploadButton room={state.room} />
+            <UploadButton room={state.room} sealdSession={sealdSessionRef.current} />
             <InputBase
               value={state.message}
               onChange={e => {

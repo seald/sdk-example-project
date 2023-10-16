@@ -43,6 +43,7 @@ const APIClient = baseURL => {
       account: {
         status: () => GET('/account'),
         create: body => POST('/account', body),
+        setSealdId: body => POST('/account/sealdId', body),
         login: body => POST('/account/login', body),
         logout: () => GET('/account/logout')
       },
@@ -140,11 +141,13 @@ export class Room {
 }
 
 export class User {
-  constructor ({ id, name, emailAddress, photoURL }) {
+  constructor ({ id, name, emailAddress, photoURL, signupJWT, sealdId }) {
     this.id = id
+    this.sealdId = sealdId
     this.name = name
     this.emailAddress = emailAddress
     this.photoURL = photoURL // not implemented
+    this.signupJWT = signupJWT // only for currentUser, and on sign-up only
   }
 
   static async list () {
@@ -152,7 +155,7 @@ export class User {
   }
 
   static async createAccount ({ emailAddress, password, name }) {
-    const { user: { id } } = await apiClient.rest.account.create({
+    const { user: { id }, signupJWT } = await apiClient.rest.account.create({
       emailAddress,
       password,
       name
@@ -160,9 +163,15 @@ export class User {
     currentUser = new this({
       id,
       emailAddress,
-      name
+      name,
+      signupJWT
     })
     return currentUser
+  }
+
+  async setSealdId (sealdId) {
+    await apiClient.rest.account.setSealdId({ sealdId })
+    this.sealdId = sealdId
   }
 
   static async login ({ emailAddress, password }) {
@@ -179,11 +188,12 @@ export class User {
   }
 
   static async updateCurrentUser () {
-    const { user: { id, emailAddress, name } } = await apiClient.rest.account.status()
+    const { user: { id, emailAddress, name, sealdId } } = await apiClient.rest.account.status()
     currentUser = new this({
       id,
       emailAddress,
-      name
+      name,
+      sealdId
     })
     return currentUser
   }

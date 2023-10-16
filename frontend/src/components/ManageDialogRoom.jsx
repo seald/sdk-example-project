@@ -32,6 +32,7 @@ import {
   TOGGLE_SELECTED_USERS_ROOM
 } from '../stores/reducer/constants'
 import { SocketContext } from '../stores/SocketContext'
+import { getSealdSDKInstance } from '../services/seald'
 
 const useStyles = makeStyles(theme => {
   return {
@@ -80,13 +81,16 @@ function ManageDialogRoom () {
     try {
       dispatch({ type: TOGGLE_LOADING_ROOM })
       if (dialogRoom.room) {
+        await dialogRoom.sealdSession.revokeRecipients({ sealdIds: dialogRoom.room.users.filter(u => !dialogRoom.selectedUsers.includes(u.id)).map(u => u.sealdId) })
+        await dialogRoom.sealdSession.addRecipients({ sealdIds: dialogRoom.selectedUsers.filter(u => !dialogRoom.room.users.includes(u.id)).map(u => u.sealdId) })
         await dialogRoom.room.edit({ name: dialogRoom.name, users: dialogRoom.selectedUsers })
       } else {
         const newRoom = await Room.create(
           dialogRoom.name,
           dialogRoom.selectedUsers
         )
-        await newRoom.postMessage('Hello 👋')
+        const sealdSession = await getSealdSDKInstance().createEncryptionSession({ sealdIds: dialogRoom.selectedUsers.map(u => u.sealdId) }, { metadata: newRoom.id })
+        await newRoom.postMessage(await sealdSession.encryptMessage('Hello 👋'))
         navigate(`/rooms/${newRoom.id}`)
       }
 

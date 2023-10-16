@@ -21,7 +21,7 @@ function App () {
   useEffect(() => {
     const init = async () => {
       try {
-        const currentUser = User.getCurrentUser() || await User.updateCurrentUser()
+        const currentUser = User.getCurrentUser() // || await User.updateCurrentUser() // TODO : Seald-SDK loads in memory, cannot retrieve it from session, must type password
         dispatch({ type: SET_AUTH, payload: { currentUser } })
         dispatch({
           type: SET_ROOMS,

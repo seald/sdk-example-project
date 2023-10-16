@@ -17,6 +17,7 @@ import Copyright from '../components/Copyright'
 import { Room, User } from '../services/api'
 import { SET_AUTH, SET_ROOMS } from '../stores/reducer/constants.js'
 import { SocketContext } from '../stores/SocketContext.jsx'
+import { createIdentity } from '../services/seald'
 
 const useStyles = makeStyles(theme => ({
   paper: {
@@ -66,6 +67,8 @@ function SignUp () {
         const password = formData.get('password')
         const name = formData.get('name')
         const currentUser = await User.createAccount({ emailAddress, password, name })
+        const sealdId = await createIdentity({ userId: currentUser.id, password, signupJWT: currentUser.signupJWT })
+        await currentUser.setSealdId(sealdId)
         dispatch({ type: SET_AUTH, payload: { currentUser } })
         dispatch({
           type: SET_ROOMS,

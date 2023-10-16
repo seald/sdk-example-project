@@ -15,7 +15,14 @@ const loginValidator = {
   })
 }
 
+const sealdIdValidator = {
+  body: Joi.object({
+    sealdId: Joi.string().required().max(255)
+  })
+}
+
 module.exports = {
   createAccountValidator,
-  loginValidator
+  loginValidator,
+  sealdIdValidator
 }

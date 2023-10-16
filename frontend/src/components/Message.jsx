@@ -1,3 +1,4 @@
+/* eslint-env browser */
 import React, { memo, useEffect } from 'react'
 import { Box, CircularProgress, Typography } from '@mui/material'
 import makeStyles from '@mui/styles/makeStyles'
@@ -29,7 +30,7 @@ const useStyles = makeStyles(theme => ({
   }
 }))
 
-function Message ({ value, isCurrentUser, uploadId, uploadFileName }) {
+function Message ({ value, isCurrentUser, uploadId, uploadFileName, sealdSession }) {
   const [state, setState] = useImmer({
     isLoading: typeof value !== 'string',
     isError: false,
@@ -64,12 +65,16 @@ function Message ({ value, isCurrentUser, uploadId, uploadFileName }) {
     }
   }, [value, setState])
 
-  const onClick = () => {
+  const onClick = async () => {
     if (state.uploadId) {
-      const href = '/api/uploads/' + state.uploadId
+      const url = '/api/uploads/' + state.uploadId
+      const response = await fetch(url)
+      const encryptedBlob = await response.blob()
+      const { data: clearBlob, filename } = await sealdSession.decryptFile(encryptedBlob)
+      const href = window.URL.createObjectURL(clearBlob)
       const anchor = document.createElement('a')
       anchor.href = href
-      anchor.download = state.uploadFileName
+      anchor.download = filename
       document.body.appendChild(anchor)
       anchor.click()
       document.body.removeChild(anchor)
