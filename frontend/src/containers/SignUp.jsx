@@ -17,7 +17,7 @@ import Copyright from '../components/Copyright'
 import { Room, User } from '../services/api'
 import { SET_AUTH, SET_ROOMS } from '../stores/reducer/constants.js'
 import { SocketContext } from '../stores/SocketContext.jsx'
-import { createIdentity } from '../services/seald'
+import { createIdentity, saveIdentity2MR } from '../services/seald'
 
 const useStyles = makeStyles(theme => ({
   paper: {
@@ -53,6 +53,8 @@ const useStyles = makeStyles(theme => ({
 
 function SignUp () {
   const { enqueueSnackbar } = useSnackbar()
+  const [challengeSession, setChallengeSession] = useState(null)
+  const [currentUser, setCurrentUser] = useState({})
   const [isLoading, setIsLoading] = useState(false)
   const [, dispatch] = useContext(SocketContext)
   const classes = useStyles()
@@ -68,13 +70,61 @@ function SignUp () {
         const name = formData.get('name')
         const currentUser = await User.createAccount({ emailAddress, password, name })
         const sealdId = await createIdentity({
-          userId: currentUser.id,
-          password,
           databaseKey: currentUser.databaseKey,
           sessionID: currentUser.sessionID,
           signupJWT: currentUser.signupJWT
         })
         await currentUser.setSealdId(sealdId)
+        const { twoManRuleSessionId, twoManRuleKey, mustAuthenticate } = User.sendChallenge2MR()
+        setCurrentUser(currentUser)
+        if (mustAuthenticate) {
+          setChallengeSession({
+            twoManRuleSessionId,
+            twoManRuleKey,
+            emailAddress
+          })
+          console.log('session set')
+        } else {
+          await saveIdentity2MR({
+            userId: currentUser.id,
+            emailAddress,
+            twoManRuleKey,
+            twoManRuleSessionId,
+            challenge: undefined
+          })
+          dispatch({ type: SET_AUTH, payload: { currentUser } })
+          dispatch({
+            type: SET_ROOMS,
+            payload: {
+              rooms: await Room.list()
+            }
+          })
+        }
+      } catch (error) {
+        enqueueSnackbar(error.message, {
+          variant: 'error'
+        })
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    [enqueueSnackbar, dispatch, currentUser, setCurrentUser, challengeSession, setChallengeSession]
+  )
+
+  const handleChallengeSubmit = useCallback(
+    async e => {
+      e.preventDefault()
+      const formData = new FormData(e.target)
+      try {
+        setIsLoading(true)
+        const challenge = formData.get('challenge')
+        await saveIdentity2MR({
+          userId: currentUser.id,
+          emailAddress: challengeSession.emailAddress,
+          twoManRuleKey: challengeSession.twoManRuleKey,
+          twoManRuleSessionId: challengeSession.twoManRuleSessionId,
+          challenge
+        })
         dispatch({ type: SET_AUTH, payload: { currentUser } })
         dispatch({
           type: SET_ROOMS,
@@ -90,7 +140,7 @@ function SignUp () {
         setIsLoading(false)
       }
     },
-    [enqueueSnackbar, dispatch]
+    [enqueueSnackbar, dispatch, challengeSession, currentUser]
   )
 
   function SignupForm () {
@@ -139,6 +189,32 @@ function SignUp () {
     )
   }
 
+  function ChallengeForm () {
+    return (
+      <form className={classes.form} onSubmit={handleChallengeSubmit}>
+        <Typography>
+          You received an OTP at {challengeSession.emailAddress}
+        </Typography>
+        <TextField
+          variant='outlined'
+          margin='normal'
+          required
+          fullWidth
+          id='challenge'
+          label='challenge'
+          name='challenge'
+          autoFocus
+        />
+        <div className={classes.wrapperButton}>
+          <Button type='submit' disabled={isLoading} fullWidth variant='contained' color='primary' className={classes.submit}>
+            Sign up
+          </Button>
+          {isLoading && <CircularProgress size={24} className={classes.buttonProgress} />}
+        </div>
+      </form>
+    )
+  }
+
   return (
     <Container component='main' maxWidth='xs'>
       <CssBaseline />
@@ -146,7 +222,8 @@ function SignUp () {
         <Typography component='h1' variant='h5'>
           Sign up
         </Typography>
-        <SignupForm />
+        {!challengeSession && <SignupForm />}
+        {challengeSession && <ChallengeForm />}
         <Grid container>
           <Grid item>
             <Link component={RouterLink} to='/sign-in' variant='body2'>

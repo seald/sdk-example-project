@@ -9,8 +9,7 @@
     "@mui/material": "^5.5.3",
     "@mui/styles": "^5.5.3",
     "@seald-io/sdk": "^0.27.0",
-    "@seald-io/sdk-plugin-ssks-password": "^0.27.0",
-    "buffer": "^6.0.3",
+    "@seald-io/sdk-plugin-ssks-2mr": "^0.27.0",
     "immer": "^9.0.12",
     "notistack": "^2.0.3",
     "react": "^17.0.2",
@@ -18,7 +17,6 @@
     "react-router-dom": "^6.2.2",
     "react-scripts": "5.0.0",
     "sass": "^1.49.9",
-    "scrypt-js": "^3.0.1",
     "socket.io-client": "^4.4.1",
     "use-immer": "^0.6.0"
   },

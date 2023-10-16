@@ -1,5 +1,6 @@
 import SealdSDK from '@seald-io/sdk'
-import SealdSDKPluginSSKSPassword from '@seald-io/sdk-plugin-ssks-password'
+import SealdSDKPluginSSKS2MR from '@seald-io/sdk-plugin-ssks-2mr'
+import { User } from './api'
 import getSetting from '../settings'
 
 let sealdSDKInstance = null
@@ -11,7 +12,7 @@ const instantiateSealdSDK = async ({ databaseKey, sessionID }) => {
     databaseKey,
     databasePath: `seald-example-project-session-${sessionID}`,
     plugins: [
-      SealdSDKPluginSSKSPassword(await getSetting('KEY_STORAGE_URL')) // Optional. If not set, defaults to public keyStorageURL https://ssks.seald.io
+      SealdSDKPluginSSKS2MR(await getSetting('KEY_STORAGE_URL')) // Optional. If not set, defaults to public keyStorageURL https://ssks.seald.io
     ]
   })
   await sealdSDKInstance.initialize()
@@ -19,10 +20,9 @@ const instantiateSealdSDK = async ({ databaseKey, sessionID }) => {
 
 export const getSealdSDKInstance = () => sealdSDKInstance
 
-export const createIdentity = async ({ userId, password, databaseKey, sessionID, signupJWT }) => {
+export const createIdentity = async ({ databaseKey, sessionID, signupJWT }) => {
   await instantiateSealdSDK({ databaseKey, sessionID })
   const accountInfo = await sealdSDKInstance.initiateIdentity({ signupJWT })
-  await sealdSDKInstance.ssksPassword.saveIdentity({ userId, password })
   return accountInfo.sealdId
 }
 
@@ -36,7 +36,33 @@ export const retrieveIdentityFromLocalStorage = async ({ databaseKey, sessionID 
   return accountInfo.sealdId
 }
 
-export const retrieveIdentity = async ({ userId, password, databaseKey, sessionID }) => {
+export const saveIdentity2MR = async ({ userId, twoManRuleKey, emailAddress, twoManRuleSessionId, challenge }) => {
+  await sealdSDKInstance.ssks2MR.saveIdentity({
+    challenge,
+    authFactor: {
+      type: 'EM',
+      value: emailAddress
+    },
+    twoManRuleKey,
+    userId,
+    sessionId: twoManRuleSessionId
+  })
+}
+
+export const sendChallenge2MR = async () => {
+  return User.sendChallenge2MR()
+}
+
+export const retrieveIdentity2MR = async ({ userId, emailAddress, twoManRuleKey, twoManRuleSessionId, challenge, databaseKey, sessionID }) => {
   await instantiateSealdSDK({ databaseKey, sessionID })
-  return await sealdSDKInstance.ssksPassword.retrieveIdentity({ userId, password })
+  return await sealdSDKInstance.ssks2MR.retrieveIdentity({
+    challenge,
+    authFactor: {
+      type: 'EM',
+      value: emailAddress
+    },
+    twoManRuleKey,
+    userId,
+    sessionId: twoManRuleSessionId
+  })
 }
