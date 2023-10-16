@@ -70,7 +70,7 @@ function SignIn () {
         const emailAddress = formData.get('emailAddress')
         const password = formData.get('password')
         const currentUser = await User.login({ emailAddress, password })
-        const { sealdId } = await retrieveIdentity({ userId: currentUser.id, password })
+        const { sealdId } = await retrieveIdentity({ userId: currentUser.id, password, databaseKey: currentUser.databaseKey, sessionID: currentUser.sessionID })
         currentUser.sealdId = sealdId
         dispatch({ type: SET_AUTH, payload: { currentUser } })
         dispatch({

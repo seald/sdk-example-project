@@ -148,12 +148,14 @@ export class Room {
 }
 
 export class User {
-  constructor ({ id, name, emailAddress, photoURL, signupJWT, sealdId }) {
+  constructor ({ id, name, emailAddress, photoURL, databaseKey, sessionID, signupJWT, sealdId }) {
     this.id = id
     this.sealdId = sealdId
     this.name = name
     this.emailAddress = emailAddress
     this.photoURL = photoURL // not implemented
+    this.databaseKey = databaseKey // only for currentUser
+    this.sessionID = sessionID // only for currentUser
     this.signupJWT = signupJWT // only for currentUser, and on sign-up only
   }
 
@@ -163,7 +165,7 @@ export class User {
 
   static async createAccount ({ emailAddress, password, name }) {
     const preDerivedPassword = await preDerivePassword(password, emailAddress)
-    const { user: { id }, signupJWT } = await apiClient.rest.account.create({
+    const { user: { id }, databaseKey, sessionID, signupJWT } = await apiClient.rest.account.create({
       emailAddress,
       password: preDerivedPassword,
       name
@@ -172,6 +174,8 @@ export class User {
       id,
       emailAddress,
       name,
+      databaseKey,
+      sessionID,
       signupJWT
     })
     return currentUser
@@ -184,25 +188,29 @@ export class User {
 
   static async login ({ emailAddress, password }) {
     const preDerivedPassword = await preDerivePassword(password, emailAddress)
-    const { user: { id, name } } = await apiClient.rest.account.login({
+    const { user: { id, name }, databaseKey, sessionID } = await apiClient.rest.account.login({
       emailAddress,
       password: preDerivedPassword
     })
     currentUser = new this({
       id,
       emailAddress,
-      name
+      name,
+      databaseKey,
+      sessionID
     })
     return currentUser
   }
 
   static async updateCurrentUser () {
-    const { user: { id, emailAddress, name, sealdId } } = await apiClient.rest.account.status()
+    const { user: { id, emailAddress, name, sealdId }, databaseKey, sessionID } = await apiClient.rest.account.status()
     currentUser = new this({
       id,
       emailAddress,
       name,
-      sealdId
+      sealdId,
+      databaseKey,
+      sessionID
     })
     return currentUser
   }
