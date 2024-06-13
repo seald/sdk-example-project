@@ -41,12 +41,13 @@ const reducer = (state: SocketContextType, action: ActionsType): SocketContextTy
         if (draft.users.findIndex(u => u.id === action.payload.user.id) === -1) draft.users = [...draft.users, action.payload.user]
         break
       case SocketActionKind.START_EDIT_DIALOG_ROOM: {
-        const { selectedUsers, name, room } = action.payload
+        const { selectedUsers, name, room, sealdSession } = action.payload
         draft.dialogRoom.room = room
         draft.dialogRoom.selectedUsers = Array.from(selectedUsers)
         draft.dialogRoom.oldUsers = Array.from(selectedUsers)
         draft.dialogRoom.name = name
         draft.dialogRoom.isOpen = true
+        draft.dialogRoom.sealdSession = sealdSession
         break
       }
       case SocketActionKind.START_ADD_DIALOG_ROOM:
@@ -77,7 +78,8 @@ const reducer = (state: SocketContextType, action: ActionsType): SocketContextTy
           selectedUsers: [],
           name: '',
           isLoading: false,
-          oldUsers: []
+          oldUsers: [],
+          sealdSession: null
         }
         break
       case SocketActionKind.FAILED_DIALOG_ROOM:

@@ -3,8 +3,9 @@ import { type FC, memo, useEffect } from 'react'
 import { Box, CircularProgress, Typography } from '@mui/material'
 import { useImmer } from 'use-immer'
 import DLIcon from '@mui/icons-material/Description'
+import type { EncryptionSession } from '@seald-io/sdk/browser'
 
-const Message: FC<{ value: string | null, isCurrentUser: boolean, uploadId: string | null, uploadFileName: string | null }> = ({ value, isCurrentUser, uploadId, uploadFileName }) => {
+const Message: FC<{ value: string | null, isCurrentUser: boolean, uploadId: string | null, uploadFileName: string | null, sealdSession: EncryptionSession | null }> = ({ value, isCurrentUser, uploadId, uploadFileName, sealdSession }) => {
   const [state, setState] = useImmer<{
     isLoading: boolean
     isError: boolean
@@ -46,10 +47,14 @@ const Message: FC<{ value: string | null, isCurrentUser: boolean, uploadId: stri
   const onClick = (): void => {
     const onClickAsync = async (): Promise<void> => {
       if (state.uploadId != null && state.uploadFileName != null) {
-        const href = '/api/uploads/' + state.uploadId
+        const url = '/api/uploads/' + state.uploadId
+        const response = await fetch(url)
+        const encryptedBlob = await response.blob()
+        const { data: clearBlob, filename }: { data: Blob, filename: string } = await sealdSession.decryptFile(encryptedBlob)
+        const href = window.URL.createObjectURL(clearBlob)
         const anchor = document.createElement('a')
         anchor.href = href
-        anchor.download = state.uploadFileName
+        anchor.download = filename
         document.body.appendChild(anchor)
         anchor.click()
         document.body.removeChild(anchor)

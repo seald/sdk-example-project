@@ -1,8 +1,9 @@
 import express from 'express'
 import { validate } from 'express-validation'
 import { authenticate, isAuthenticatedMiddleware, logout } from '../middlewares/authentication.js'
-import { createAccountValidator, loginValidator } from '../validators/account.js'
+import { createAccountValidator, loginValidator, sealdIdValidator } from '../validators/account.js'
 import { User, ValidationError } from '../models.js'
+import { generateSignupJWT } from '../utils.js'
 
 const router = express.Router()
 
@@ -33,9 +34,11 @@ router.post('/', validate(createAccountValidator), async (req, res, next) => {
   try {
     const { emailAddress, password, name } = req.body
     const user = await User.create({ emailAddress, password, name })
-    global.io.emit('user:created', user.serialize())
     await authenticate(req, user)
-    res.json({ user: user.serialize() })
+    res.json({
+      user: user.serialize(),
+      signupJWT: await generateSignupJWT(user.id)
+    })
   } catch (err) {
     if (err instanceof ValidationError) res.status(400).json({ detail: 'A user with the same email address exists' })
     else next(err)
@@ -49,6 +52,19 @@ router.get('/', isAuthenticatedMiddleware, async (req, res, next) => {
   } catch (err) {
     if (err instanceof ValidationError) res.status(400).json({ detail: 'A user with the same email address exists' })
     else next(err)
+  }
+})
+
+router.post('/sealdId', validate(sealdIdValidator), async (req, res, next) => {
+  try {
+    const { sealdId } = req.body
+    const userId = req.session.user.id
+    const user = await User.findOne({ where: { id: userId } })
+    await user.setSealdId(sealdId)
+    global.io.emit('user:created', user.serialize())
+    res.json({ sealdId })
+  } catch (error) {
+    next(error)
   }
 })
 

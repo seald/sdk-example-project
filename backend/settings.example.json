@@ -1,4 +1,6 @@
 {
   "HTTPS_ENABLED": false,
-  "SESSION_SECRET": "SuperSecretSessionSecret"
+  "SESSION_SECRET": "SuperSecretSessionSecret",
+  "JWT_SHARED_SECRET_ID": "change_me",
+  "JWT_SHARED_SECRET": "change_me"
 }

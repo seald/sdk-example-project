@@ -1,0 +1,5 @@
+{
+  "APP_ID": "change_me",
+  "API_URL": "https://api.seald.io/",
+  "KEY_STORAGE_URL": "https://ssks.seald.io/"
+}

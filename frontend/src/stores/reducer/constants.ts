@@ -1,5 +1,6 @@
 import type { Room, User } from '../../services/api.ts'
 import type { SocketType } from '../SocketContext.tsx'
+import type { EncryptionSession } from '@seald-io/sdk/browser'
 
 export enum SocketActionKind {
   SET_AUTH = 'SET_AUTH',
@@ -22,7 +23,7 @@ export enum SocketActionKind {
 export interface SET_AUTH_ACTION { type: SocketActionKind.SET_AUTH, payload: { currentUser: User | null } }
 export interface SET_USERS_ACTION { type: SocketActionKind.SET_USERS, payload: { users: User[] } }
 export interface START_ADD_DIALOG_ROOM_ACTION { type: SocketActionKind.START_ADD_DIALOG_ROOM }
-export interface START_EDIT_DIALOG_ROOM_ACTION { type: SocketActionKind.START_EDIT_DIALOG_ROOM, payload: { selectedUsers: string[], name: string, room: Room | null } }
+export interface START_EDIT_DIALOG_ROOM_ACTION { type: SocketActionKind.START_EDIT_DIALOG_ROOM, payload: { selectedUsers: string[], name: string, room: Room | null, sealdSession: EncryptionSession | null } }
 export interface CLOSE_DIALOG_ROOM_ACTION { type: SocketActionKind.CLOSE_DIALOG_ROOM }
 export interface TOGGLE_SELECTED_USERS_ROOM_ACTION { type: SocketActionKind.TOGGLE_SELECTED_USERS_ROOM, payload: string }
 export interface SET_ROOM_NAME_ACTION { type: SocketActionKind.SET_ROOM_NAME, payload: { name: string } }

@@ -25,6 +25,8 @@ import { Room, type User } from '../services/api'
 import { SocketActionKind } from '../stores/reducer/constants'
 import { SocketContext } from '../stores/SocketContext'
 import { getMessageFromUnknownError } from '../utils'
+import { getSealdSDKInstance } from '../services/seald'
+import type { EncryptionSession } from '@seald-io/sdk/browser'
 
 const ManageDialogRoom: FC = () => {
   const { enqueueSnackbar } = useSnackbar()
@@ -56,13 +58,27 @@ const ManageDialogRoom: FC = () => {
     const asyncHandleSubmit = async (): Promise<void> => {
       try {
         if (dialogRoom.room != null) {
+          const sealdIdsToRevoke = users // start with all known users
+            .filter(u =>
+              dialogRoom.room!.users.includes(u.id) && // filter only users which are currently members
+              !dialogRoom.selectedUsers.includes(u.id) // but which are not selected anymore
+            ).map(u => u.sealdId) // and get their sealdId (not the same as u.id)
+          const sealdIdsToAdd = users // start with all known users
+            .filter(u =>
+              dialogRoom.selectedUsers.includes(u.id) && // filter only users which are selected
+              !dialogRoom.room!.users.includes(u.id) // but which are not currently members
+            ).map(u => u.sealdId) // and get their sealdId (not the same as u.id)
+          await dialogRoom.sealdSession.revokeRecipients({ sealdIds: sealdIdsToRevoke })
+          await dialogRoom.sealdSession.addRecipients({ sealdIds: sealdIdsToAdd })
           await dialogRoom.room.edit({ name: dialogRoom.name, users: dialogRoom.selectedUsers })
         } else {
           const newRoom = await Room.create(
             dialogRoom.name,
             dialogRoom.selectedUsers
           )
-          await newRoom.postMessage('Hello 👋')
+          const sealdSession: EncryptionSession = await getSealdSDKInstance().createEncryptionSession({ sealdIds: users.filter(u => dialogRoom.selectedUsers.includes(u.id)).map(u => u.sealdId) }, { metadata: newRoom.id })
+          const encryptedMessage: string = await sealdSession.encryptMessage('Hello 👋')
+          await newRoom.postMessage(encryptedMessage)
           navigate(`/rooms/${newRoom.id}`)
         }
 
