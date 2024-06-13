@@ -6,8 +6,6 @@ import {
   type ResponseWrapper, type RoomEditEvent, type RoomRemoveEvent,
   type SocketType
 } from '../stores/SocketContext.tsx'
-import { hashPassword } from '../utils'
-import getSetting from '../settings'
 
 const request = async (url: string, method: 'GET' | 'POST' | 'UPLOAD', body?: any, jsonContentType = true): Promise<any> => {
   const cookies = Object.fromEntries(document.cookie.split(/; */).filter(x => x !== '').map(c => {
@@ -88,6 +86,8 @@ export type MessageTypeAPI =
     uploadFileName: string
   }
 
+type SendChallenge2MRType = Record<string, never>
+
 // APIClient for REST API & IO API
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const APIClient = (baseURL?: string) => {
@@ -120,6 +120,7 @@ const APIClient = (baseURL?: string) => {
           databaseKey: string
           sessionID: string
         }>('/account/login', body),
+        sendChallenge2MR: async (): Promise<{ twoManRuleSessionId: string, twoManRuleKey: string, mustAuthenticate: boolean }> => await POST<SendChallenge2MRType, { twoManRuleSessionId: string, twoManRuleKey: string, mustAuthenticate: boolean }>('/account/sendChallenge2MR', {}),
         logout: async (): Promise<{ detail: 'Successfully logged out' }> => await GET<{
           detail: 'Successfully logged out'
         }>('/account/logout'),
@@ -199,11 +200,6 @@ const unwrapHandler = async <T extends ClientToServerEventsType> (socket: Socket
       socket.emit(eventName, ...args)
     }
   })
-
-const preDerivePassword = async (password: string, emailAddress: string): Promise<string> => {
-  const fixedString = await getSetting('APPLICATION_SALT')
-  return await hashPassword(password, `${fixedString}|${emailAddress}`)
-}
 
 let currentUser: null | User = null
 
@@ -285,10 +281,9 @@ export class User {
   }
 
   static async createAccount ({ emailAddress, password, name }: CreateAccountType): Promise<User> {
-    const preDerivedPassword = await preDerivePassword(password, emailAddress)
     const { user: { id }, databaseKey, sessionID, signupJWT } = await apiClient.rest.account.create({
       emailAddress,
-      password: preDerivedPassword,
+      password,
       name
     })
     currentUser = new this({
@@ -308,10 +303,9 @@ export class User {
   }
 
   static async login ({ emailAddress, password }: LoginType): Promise<User> {
-    const preDerivedPassword = await preDerivePassword(password, emailAddress)
     const { user: { id, name, sealdId }, databaseKey, sessionID } = await apiClient.rest.account.login({
       emailAddress,
-      password: preDerivedPassword
+      password
     })
     currentUser = new this({
       id,
@@ -322,6 +316,10 @@ export class User {
       sessionID
     })
     return currentUser
+  }
+
+  static async sendChallenge2MR (): Promise<{ twoManRuleSessionId: string, twoManRuleKey: string, mustAuthenticate: boolean }> {
+    return await apiClient.rest.account.sendChallenge2MR()
   }
 
   static async updateCurrentUser (): Promise<User> {

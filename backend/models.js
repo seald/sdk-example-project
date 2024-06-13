@@ -59,6 +59,9 @@ User.init(
     },
     hashedPassword: {
       type: DataTypes.STRING
+    },
+    twoManRuleKey: {
+      type: DataTypes.STRING
     }
   },
   { sequelize, modelName: 'User' }
