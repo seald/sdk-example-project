@@ -4,6 +4,7 @@ interface Settings {
   APP_ID: string
   API_URL: string
   KEY_STORAGE_URL: string
+  APPLICATION_SALT: string
 }
 
 let settings: Settings | undefined
