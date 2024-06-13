@@ -1,0 +1,31 @@
+services:
+  frontend:
+    build: ./frontend
+    restart: on-failure
+    depends_on:
+      - backend
+    ports:
+      - '80:80'
+    volumes:
+      - "sqlite:/backend/sqlite/:ro"
+
+  backend:
+    build: ./backend
+    restart: on-failure
+    environment:
+      - "NODE_ENV=production"
+    volumes:
+      - "sqlite:/backend/sqlite/"
+      - "storage:/backend/storage/"
+      - "./backend/settings.json:/backend/settings.json"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 3s
+      start_interval: 300ms
+
+volumes:
+  storage:
+  sqlite:
