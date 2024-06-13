@@ -26,7 +26,7 @@ const SignUp: FC = () => {
   const [challengeSession, setChallengeSession] = useState<{
     twoManRuleSessionId: string
     twoManRuleKey: string
-    emailAddress: string
+    phoneNumber: string
   } | null>(null)
   const [currentUser, setCurrentUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -40,8 +40,9 @@ const SignUp: FC = () => {
       try {
         const emailAddress = formData.get('emailAddress') as string
         const password = formData.get('password') as string
+        const phoneNumber = formData.get('phoneNumber') as string
         const name = formData.get('name') as string
-        const currentUser = await User.createAccount({ emailAddress, password, name })
+        const currentUser = await User.createAccount({ emailAddress, password, phoneNumber, name })
         const sealdId = await createIdentity({
           signupJWT: currentUser.signupJWT!,
           databaseKey: currentUser.databaseKey!,
@@ -54,13 +55,13 @@ const SignUp: FC = () => {
           setChallengeSession({
             twoManRuleSessionId,
             twoManRuleKey,
-            emailAddress
+            phoneNumber
           })
           console.log('session set')
         } else {
           await saveIdentity2MR({
             userId: currentUser.id,
-            emailAddress,
+            phoneNumber,
             twoManRuleKey,
             twoManRuleSessionId,
             challenge: undefined
@@ -98,7 +99,7 @@ const SignUp: FC = () => {
         if (challengeSession == null) throw new Error('challengeSession is not defined')
         await saveIdentity2MR({
           userId: currentUser.id,
-          emailAddress: challengeSession.emailAddress,
+          phoneNumber: challengeSession.phoneNumber,
           twoManRuleKey: challengeSession.twoManRuleKey,
           twoManRuleSessionId: challengeSession.twoManRuleSessionId,
           challenge
@@ -154,6 +155,16 @@ const SignUp: FC = () => {
           margin='normal'
           required
           fullWidth
+          name='phoneNumber'
+          label='phone number'
+          type='tel'
+          id='phoneNumber'
+        />
+        <TextField
+          variant='outlined'
+          margin='normal'
+          required
+          fullWidth
           name='name'
           label='Display name'
           type='text'
@@ -189,7 +200,7 @@ const SignUp: FC = () => {
       width: '100%'
     }}>
       <Typography>
-        You received an OTP at {challengeSession?.emailAddress}
+        You received an OTP at {challengeSession?.phoneNumber}
       </Typography>
       <TextField
         variant='outlined'

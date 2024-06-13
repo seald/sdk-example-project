@@ -34,12 +34,12 @@ export const retrieveIdentityFromLocalStorage = async ({ databaseKey, sessionID 
   return accountInfo.sealdId
 }
 
-export const saveIdentity2MR = async ({ userId, twoManRuleKey, emailAddress, twoManRuleSessionId, challenge }: { userId: string, twoManRuleKey: string, emailAddress: string, twoManRuleSessionId: string, challenge?: string }): Promise<void> => {
+export const saveIdentity2MR = async ({ userId, twoManRuleKey, phoneNumber, twoManRuleSessionId, challenge }: { userId: string, twoManRuleKey: string, phoneNumber: string, twoManRuleSessionId: string, challenge?: string }): Promise<void> => {
   await sealdSDKInstance.ssks2MR.saveIdentity({
     challenge,
     authFactor: {
-      type: 'EM',
-      value: emailAddress
+      type: 'SMS',
+      value: phoneNumber
     },
     twoManRuleKey,
     userId,
@@ -51,13 +51,13 @@ export const sendChallenge2MR = async (): Promise<{ twoManRuleSessionId: string,
   return await User.sendChallenge2MR()
 }
 
-export const retrieveIdentity2MR = async ({ userId, emailAddress, twoManRuleKey, twoManRuleSessionId, challenge, databaseKey, sessionID }: { userId: string, twoManRuleKey: string, emailAddress: string, twoManRuleSessionId: string, challenge: string, databaseKey: string, sessionID: string }): Promise<string> => {
+export const retrieveIdentity2MR = async ({ userId, phoneNumber, twoManRuleKey, twoManRuleSessionId, challenge, databaseKey, sessionID }: { userId: string, twoManRuleKey: string, phoneNumber: string, twoManRuleSessionId: string, challenge: string, databaseKey: string, sessionID: string }): Promise<string> => {
   await instantiateSealdSDK({ databaseKey, sessionID })
   return (await sealdSDKInstance.ssks2MR.retrieveIdentity({
     challenge,
     authFactor: {
-      type: 'EM',
-      value: emailAddress
+      type: 'SMS',
+      value: phoneNumber
     },
     twoManRuleKey,
     userId,

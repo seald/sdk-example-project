@@ -17,8 +17,8 @@ class User extends Model {
     this.hashedPassword = await hashPassword(password)
   }
 
-  static async create ({ emailAddress, name, password }) {
-    return super.create({ emailAddress, name, hashedPassword: await hashPassword(password) })
+  static async create ({ emailAddress, name, password, phoneNumber }) {
+    return super.create({ emailAddress, name, hashedPassword: await hashPassword(password), phoneNumber })
   }
 
   async setSealdId (sealdId) {
@@ -31,7 +31,8 @@ class User extends Model {
       id: this.id,
       name: this.name,
       emailAddress: this.emailAddress,
-      sealdId: this.sealdId
+      sealdId: this.sealdId,
+      phoneNumber: this.phoneNumber
     }
   }
 }
@@ -48,6 +49,10 @@ User.init(
       allowNull: true
     },
     name: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    phoneNumber: {
       type: DataTypes.STRING,
       allowNull: false
     },
