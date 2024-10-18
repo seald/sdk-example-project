@@ -6,6 +6,8 @@ import {
   type ResponseWrapper, type RoomEditEvent, type RoomRemoveEvent,
   type SocketType
 } from '../stores/SocketContext.tsx'
+import { hashPassword } from '../utils'
+import getSetting from '../settings'
 
 const request = async (url: string, method: 'GET' | 'POST' | 'UPLOAD', body?: any, jsonContentType = true): Promise<any> => {
   const cookies = Object.fromEntries(document.cookie.split(/; */).filter(x => x !== '').map(c => {
@@ -194,6 +196,11 @@ const unwrapHandler = async <T extends ClientToServerEventsType> (socket: Socket
     }
   })
 
+const preDerivePassword = async (password: string, emailAddress: string): Promise<string> => {
+  const fixedString = await getSetting('APPLICATION_SALT')
+  return await hashPassword(password, `${fixedString}|${emailAddress}`)
+}
+
 let currentUser: null | User = null
 
 const apiClient = APIClient()
@@ -270,9 +277,10 @@ export class User {
   }
 
   static async createAccount ({ emailAddress, password, name }: CreateAccountType): Promise<User> {
+    const preDerivedPassword = await preDerivePassword(password, emailAddress)
     const { user: { id }, signupJWT } = await apiClient.rest.account.create({
       emailAddress,
-      password,
+      password: preDerivedPassword,
       name
     })
     currentUser = new this({
@@ -290,9 +298,10 @@ export class User {
   }
 
   static async login ({ emailAddress, password }: LoginType): Promise<User> {
+    const preDerivedPassword = await preDerivePassword(password, emailAddress)
     const { user: { id, name, sealdId } } = await apiClient.rest.account.login({
       emailAddress,
-      password
+      password: preDerivedPassword
     })
     currentUser = new this({
       id,
