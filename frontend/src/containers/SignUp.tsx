@@ -18,11 +18,17 @@ import { SocketActionKind } from '../stores/reducer/constants.js'
 import { SocketContext } from '../stores/SocketContext.jsx'
 import { useTheme } from '@mui/material/styles'
 import { getMessageFromUnknownError } from '../utils'
-import { createIdentity } from '../services/seald'
+import { createIdentity, saveIdentity2MR, sendChallenge2MR } from '../services/seald'
 
 const SignUp: FC = () => {
   const theme = useTheme()
   const { enqueueSnackbar } = useSnackbar()
+  const [challengeSession, setChallengeSession] = useState<{
+    twoManRuleSessionId: string
+    twoManRuleKey: string
+    emailAddress: string
+  } | null>(null)
+  const [currentUser, setCurrentUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [, dispatch] = useContext(SocketContext)
 
@@ -37,13 +43,66 @@ const SignUp: FC = () => {
         const name = formData.get('name') as string
         const currentUser = await User.createAccount({ emailAddress, password, name })
         const sealdId = await createIdentity({
-          userId: currentUser.id,
-          password,
           signupJWT: currentUser.signupJWT!,
           databaseKey: currentUser.databaseKey!,
           sessionID: currentUser.sessionID!
         })
         await currentUser.setSealdId(sealdId)
+        const { twoManRuleSessionId, twoManRuleKey, mustAuthenticate } = await sendChallenge2MR()
+        setCurrentUser(currentUser)
+        if (mustAuthenticate) {
+          setChallengeSession({
+            twoManRuleSessionId,
+            twoManRuleKey,
+            emailAddress
+          })
+          console.log('session set')
+        } else {
+          await saveIdentity2MR({
+            userId: currentUser.id,
+            emailAddress,
+            twoManRuleKey,
+            twoManRuleSessionId,
+            challenge: undefined
+          })
+          dispatch({ type: SocketActionKind.SET_AUTH, payload: { currentUser } })
+          dispatch({
+            type: SocketActionKind.SET_ROOMS,
+            payload: {
+              rooms: await Room.list()
+            }
+          })
+        }
+      } catch (error) {
+        enqueueSnackbar(getMessageFromUnknownError(error), {
+          variant: 'error'
+        })
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    void asyncHandleSignupSubmit()
+  },
+  [enqueueSnackbar, dispatch, setCurrentUser, setChallengeSession]
+  )
+
+  const handleChallengeSubmit = useCallback((event: FormEvent<HTMLFormElement>): void => {
+    event.preventDefault()
+    setIsLoading(true)
+    const handleChallengeSubmitAsync = async (): Promise<void> => {
+      const formData = new FormData(event.target as HTMLFormElement)
+      try {
+        setIsLoading(true)
+        const challenge = formData.get('challenge') as string ?? undefined
+        if (currentUser == null) throw new Error('currentUser is not defined')
+        if (challengeSession == null) throw new Error('challengeSession is not defined')
+        await saveIdentity2MR({
+          userId: currentUser.id,
+          emailAddress: challengeSession.emailAddress,
+          twoManRuleKey: challengeSession.twoManRuleKey,
+          twoManRuleSessionId: challengeSession.twoManRuleSessionId,
+          challenge
+        })
         dispatch({ type: SocketActionKind.SET_AUTH, payload: { currentUser } })
         dispatch({
           type: SocketActionKind.SET_ROOMS,
@@ -59,10 +118,10 @@ const SignUp: FC = () => {
         setIsLoading(false)
       }
     }
-    void asyncHandleSignupSubmit()
-  }
-  ,
-  [enqueueSnackbar, dispatch]
+
+    void handleChallengeSubmitAsync()
+  },
+  [enqueueSnackbar, dispatch, challengeSession, currentUser]
   )
 
   function SignupForm (): JSX.Element {
@@ -125,6 +184,47 @@ const SignUp: FC = () => {
     )
   }
 
+  const ChallengeForm: FC = () => (
+    <form onSubmit={handleChallengeSubmit} style={{
+      width: '100%'
+    }}>
+      <Typography>
+        You received an OTP at {challengeSession?.emailAddress}
+      </Typography>
+      <TextField
+        variant='outlined'
+        margin='normal'
+        required
+        fullWidth
+        id='challenge'
+        label='challenge'
+        name='challenge'
+        autoFocus
+      />
+      <div style={{
+        margin: theme.spacing(1),
+        position: 'relative'
+      }}>
+        <Button type='submit' disabled={isLoading} fullWidth variant='contained' color='primary'
+                sx={{
+                  mt: 3,
+                  mb: 2,
+                  mx: 0
+                }}>
+          Sign up
+        </Button>
+        {isLoading && <CircularProgress size={24} sx={{
+          color: 'success',
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          mt: '-8px',
+          ml: '-12px'
+        }}/>}
+      </div>
+    </form>
+  )
+
   return (
     <Container component='main' maxWidth='xs'>
       <CssBaseline />
@@ -137,7 +237,7 @@ const SignUp: FC = () => {
         <Typography component='h1' variant='h5'>
           Sign up
         </Typography>
-        <SignupForm />
+        {challengeSession == null ? <SignupForm /> : <ChallengeForm />}
         <Grid container>
           <Grid item>
             <Link component={RouterLink} to='/sign-in' variant='body2'>

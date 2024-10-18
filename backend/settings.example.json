@@ -2,5 +2,8 @@
   "HTTPS_ENABLED": false,
   "SESSION_SECRET": "SuperSecretSessionSecret",
   "JWT_SHARED_SECRET_ID": "change_me",
-  "JWT_SHARED_SECRET": "change_me"
+  "JWT_SHARED_SECRET": "change_me",
+  "APP_ID": "change_me",
+  "KEY_STORAGE_URL": "https://ssks.seald.io/",
+  "KEY_STORAGE_APP_KEY": "change_me"
 }
