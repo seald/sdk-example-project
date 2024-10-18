@@ -108,13 +108,17 @@ const APIClient = (baseURL?: string) => {
   return {
     rest: {
       account: {
-        status: async (): Promise<{ user: UserType }> => await GET<{ user: UserType }>('/account'),
-        create: async (body: CreateAccountType): Promise<{ user: UserType, signupJWT: string }> => await POST<CreateAccountType, {
+        status: async (): Promise<{ user: UserType, databaseKey: string, sessionID: string }> => await GET<{ user: UserType, databaseKey: string, sessionID: string }>('/account'),
+        create: async (body: CreateAccountType): Promise<{ user: UserType, signupJWT: string, databaseKey: string, sessionID: string }> => await POST<CreateAccountType, {
           user: UserType
           signupJWT: string
+          databaseKey: string
+          sessionID: string
         }>('/account', body),
-        login: async (body: LoginType): Promise<{ user: UserType }> => await POST<LoginType, {
+        login: async (body: LoginType): Promise<{ user: UserType, databaseKey: string, sessionID: string }> => await POST<LoginType, {
           user: UserType
+          databaseKey: string
+          sessionID: string
         }>('/account/login', body),
         logout: async (): Promise<{ detail: 'Successfully logged out' }> => await GET<{
           detail: 'Successfully logged out'
@@ -263,13 +267,17 @@ export class User {
   readonly emailAddress: string
   sealdId?: string
   readonly signupJWT?: string
+  readonly databaseKey?: string
+  readonly sessionID?: string
 
-  constructor ({ id, name, emailAddress, sealdId, signupJWT }: { id: string, name: string, emailAddress: string, sealdId?: string, signupJWT?: string }) {
+  constructor ({ id, name, emailAddress, sealdId, signupJWT, databaseKey, sessionID }: { id: string, name: string, emailAddress: string, sealdId?: string, signupJWT?: string, sessionID?: string, databaseKey?: string }) {
     this.id = id
     this.name = name
     this.emailAddress = emailAddress
     if (sealdId != null) this.sealdId = sealdId // is not defined before Seald identity creation
     if (signupJWT != null) this.signupJWT = signupJWT // only for currentUser, and on sign-up only
+    if (databaseKey != null) this.databaseKey = databaseKey // only for currentUser
+    if (sessionID != null) this.sessionID = sessionID // only for currentUser
   }
 
   static async list (): Promise<User[]> {
@@ -278,7 +286,7 @@ export class User {
 
   static async createAccount ({ emailAddress, password, name }: CreateAccountType): Promise<User> {
     const preDerivedPassword = await preDerivePassword(password, emailAddress)
-    const { user: { id }, signupJWT } = await apiClient.rest.account.create({
+    const { user: { id }, databaseKey, sessionID, signupJWT } = await apiClient.rest.account.create({
       emailAddress,
       password: preDerivedPassword,
       name
@@ -287,7 +295,9 @@ export class User {
       id,
       emailAddress,
       name,
-      signupJWT
+      signupJWT,
+      databaseKey,
+      sessionID
     })
     return currentUser
   }
@@ -299,7 +309,7 @@ export class User {
 
   static async login ({ emailAddress, password }: LoginType): Promise<User> {
     const preDerivedPassword = await preDerivePassword(password, emailAddress)
-    const { user: { id, name, sealdId } } = await apiClient.rest.account.login({
+    const { user: { id, name, sealdId }, databaseKey, sessionID } = await apiClient.rest.account.login({
       emailAddress,
       password: preDerivedPassword
     })
@@ -307,18 +317,22 @@ export class User {
       id,
       emailAddress,
       name,
-      sealdId
+      sealdId,
+      databaseKey,
+      sessionID
     })
     return currentUser
   }
 
   static async updateCurrentUser (): Promise<User> {
-    const { user: { id, emailAddress, name, sealdId } } = await apiClient.rest.account.status()
+    const { user: { id, emailAddress, name, sealdId }, databaseKey, sessionID } = await apiClient.rest.account.status()
     currentUser = new this({
       id,
       emailAddress,
       name,
-      sealdId
+      sealdId,
+      databaseKey,
+      sessionID
     })
     return currentUser
   }

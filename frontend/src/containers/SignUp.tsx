@@ -39,7 +39,9 @@ const SignUp: FC = () => {
         const sealdId = await createIdentity({
           userId: currentUser.id,
           password,
-          signupJWT: currentUser.signupJWT!
+          signupJWT: currentUser.signupJWT!,
+          databaseKey: currentUser.databaseKey!,
+          sessionID: currentUser.sessionID!
         })
         await currentUser.setSealdId(sealdId)
         dispatch({ type: SocketActionKind.SET_AUTH, payload: { currentUser } })

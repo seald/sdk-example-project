@@ -13,6 +13,7 @@ import { SocketContext } from './stores/SocketContext'
 import theme from './theme'
 import { Room, User } from './services/api'
 import { SocketActionKind } from './stores/reducer/constants'
+import { retrieveIdentityFromLocalStorage } from './services/seald'
 
 const App: FC = () => {
   const [isLoading, setIsLoading] = useState(true)
@@ -21,7 +22,26 @@ const App: FC = () => {
   useEffect(() => {
     const init = async (): Promise<void> => {
       try {
-        const currentUser = User.getCurrentUser() // || await User.updateCurrentUser() // TODO : Seald-SDK loads in memory, cannot retrieve it from session, must type password
+        let currentUser
+        // We need to retrieve :
+        // 1/ the profile of the user (userId, name, etc.) & databaseKey
+        // 2/ its Seald identity from the localStorage
+        // If any of these steps fail, we need to log in again.
+        try {
+          currentUser = await User.updateCurrentUser() // Retrieve the profile & databaseKey
+          if (currentUser.id === '' || currentUser.databaseKey == null || currentUser.sessionID == null) { // Check we got at least the id, databaseKey & sessionID
+            await (User.logout().catch(() => {})) // if not, let's log out gracefully
+            throw new Error('Retrieved profile incomplete') // and skip to catch
+          }
+          const sealdId = await retrieveIdentityFromLocalStorage({ // We try to retrieve the Seald identity from localStorage
+            databaseKey: currentUser.databaseKey,
+            sessionID: currentUser.sessionID
+          })
+          currentUser.sealdId = sealdId
+        } catch (error) {
+          console.error(error)
+          currentUser = null
+        }
         dispatch({ type: SocketActionKind.SET_AUTH, payload: { currentUser } })
         dispatch({
           type: SocketActionKind.SET_ROOMS,

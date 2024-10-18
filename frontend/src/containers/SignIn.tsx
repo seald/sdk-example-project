@@ -43,7 +43,9 @@ const SignIn: FC = () => {
         const currentUser = await User.login({ emailAddress, password })
         const sealdId = await retrieveIdentity({
           userId: currentUser.id,
-          password
+          password,
+          sessionID: currentUser.sessionID!,
+          databaseKey: currentUser.databaseKey!
         })
         currentUser.sealdId = sealdId
         dispatch({ type: SocketActionKind.SET_AUTH, payload: { currentUser } })
