@@ -26,7 +26,7 @@ const SignIn: FC = () => {
   const [challengeSession, setChallengeSession] = useState<{
     twoManRuleSessionId: string
     twoManRuleKey: string
-    emailAddress: string
+    phoneNumber: string
   } | null>(null)
   const [currentUser, setCurrentUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -51,7 +51,7 @@ const SignIn: FC = () => {
         setCurrentUser(currentUser)
         setChallengeSession({
           twoManRuleSessionId,
-          emailAddress,
+          phoneNumber: currentUser.phoneNumber,
           twoManRuleKey
         })
       } catch (error) {
@@ -79,7 +79,7 @@ const SignIn: FC = () => {
         if (challengeSession == null) throw new Error('challengeSession is not defined')
         const sealdId = await retrieveIdentity2MR({
           userId: currentUser.id,
-          emailAddress: challengeSession.emailAddress,
+          phoneNumber: challengeSession.phoneNumber,
           twoManRuleKey: challengeSession.twoManRuleKey,
           twoManRuleSessionId: challengeSession.twoManRuleSessionId,
           challenge,
@@ -112,7 +112,7 @@ const SignIn: FC = () => {
   const ChallengeForm: FC = () => (
     <form style={{ width: '100%' }} onSubmit={handleChallengeSubmit}>
       <Typography>
-        You received an OTP at {challengeSession?.emailAddress}
+        You received an OTP at {challengeSession?.phoneNumber}
       </Typography>
       <TextField
         variant='outlined'

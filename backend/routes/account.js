@@ -52,8 +52,8 @@ router.post('/sendChallenge2MR', isAuthenticatedMiddleware, async (req, res, nex
         user_id: user.id,
         // template_id: '00000000-0000-0000-0000-000000000000', // ID of the template to use. Templates are created on the dashboard.
         auth_factor: {
-          type: 'EM',
-          value: user.emailAddress.normalize('NFKC').replace(/ /g, '').toLowerCase()
+          type: 'SMS',
+          value: user.phoneNumber
         }
       })
     }
@@ -86,8 +86,8 @@ router.get('/logout', isAuthenticatedMiddleware, async (req, res, next) => {
 
 router.post('/', validate(createAccountValidator), async (req, res, next) => {
   try {
-    const { emailAddress, password, name } = req.body
-    const user = await User.create({ emailAddress, password, name })
+    const { emailAddress, password, phoneNumber, name } = req.body
+    const user = await User.create({ emailAddress, password, phoneNumber, name })
     await authenticate(req, user)
     req.session.databaseKey = (await randomBytes(64)).toString('base64')
     res.json({

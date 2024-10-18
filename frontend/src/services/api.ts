@@ -38,6 +38,7 @@ export interface CreateAccountType {
   emailAddress: string
   name: string
   password: string
+  phoneNumber: string
 }
 
 export interface LoginType {
@@ -54,6 +55,7 @@ export interface UserType {
   name: string
   emailAddress: string
   sealdId: string
+  phoneNumber: string
 }
 
 export interface RoomType {
@@ -261,15 +263,17 @@ export class User {
   readonly id: string
   readonly name: string
   readonly emailAddress: string
+  readonly phoneNumber: string
   sealdId?: string
   readonly signupJWT?: string
   readonly databaseKey?: string
   readonly sessionID?: string
 
-  constructor ({ id, name, emailAddress, sealdId, signupJWT, databaseKey, sessionID }: { id: string, name: string, emailAddress: string, sealdId?: string, signupJWT?: string, sessionID?: string, databaseKey?: string }) {
+  constructor ({ id, name, emailAddress, sealdId, signupJWT, databaseKey, sessionID, phoneNumber }: { id: string, name: string, emailAddress: string, phoneNumber: string, sealdId?: string, signupJWT?: string, sessionID?: string, databaseKey?: string }) {
     this.id = id
     this.name = name
     this.emailAddress = emailAddress
+    this.phoneNumber = phoneNumber
     if (sealdId != null) this.sealdId = sealdId // is not defined before Seald identity creation
     if (signupJWT != null) this.signupJWT = signupJWT // only for currentUser, and on sign-up only
     if (databaseKey != null) this.databaseKey = databaseKey // only for currentUser
@@ -280,15 +284,17 @@ export class User {
     return (await apiClient.rest.users.list()).users.map(u => new this(u))
   }
 
-  static async createAccount ({ emailAddress, password, name }: CreateAccountType): Promise<User> {
+  static async createAccount ({ emailAddress, password, name, phoneNumber }: CreateAccountType): Promise<User> {
     const { user: { id }, databaseKey, sessionID, signupJWT } = await apiClient.rest.account.create({
       emailAddress,
       password,
+      phoneNumber,
       name
     })
     currentUser = new this({
       id,
       emailAddress,
+      phoneNumber,
       name,
       signupJWT,
       databaseKey,
@@ -303,13 +309,14 @@ export class User {
   }
 
   static async login ({ emailAddress, password }: LoginType): Promise<User> {
-    const { user: { id, name, sealdId }, databaseKey, sessionID } = await apiClient.rest.account.login({
+    const { user: { id, name, sealdId, phoneNumber }, databaseKey, sessionID } = await apiClient.rest.account.login({
       emailAddress,
       password
     })
     currentUser = new this({
       id,
       emailAddress,
+      phoneNumber,
       name,
       sealdId,
       databaseKey,
@@ -323,10 +330,11 @@ export class User {
   }
 
   static async updateCurrentUser (): Promise<User> {
-    const { user: { id, emailAddress, name, sealdId }, databaseKey, sessionID } = await apiClient.rest.account.status()
+    const { user: { id, emailAddress, phoneNumber, name, sealdId }, databaseKey, sessionID } = await apiClient.rest.account.status()
     currentUser = new this({
       id,
       emailAddress,
+      phoneNumber,
       name,
       sealdId,
       databaseKey,
