@@ -18,6 +18,7 @@ import { SocketActionKind } from '../stores/reducer/constants.js'
 import { SocketContext } from '../stores/SocketContext.jsx'
 import { useTheme } from '@mui/material/styles'
 import { getMessageFromUnknownError } from '../utils'
+import { createIdentity } from '../services/seald'
 
 const SignUp: FC = () => {
   const theme = useTheme()
@@ -35,6 +36,12 @@ const SignUp: FC = () => {
         const password = formData.get('password') as string
         const name = formData.get('name') as string
         const currentUser = await User.createAccount({ emailAddress, password, name })
+        const sealdId = await createIdentity({
+          userId: currentUser.id,
+          password,
+          signupJWT: currentUser.signupJWT!
+        })
+        await currentUser.setSealdId(sealdId)
         dispatch({ type: SocketActionKind.SET_AUTH, payload: { currentUser } })
         dispatch({
           type: SocketActionKind.SET_ROOMS,

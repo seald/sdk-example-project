@@ -18,6 +18,7 @@ import { Room, User } from '../services/api'
 import { SocketActionKind } from '../stores/reducer/constants.js'
 import { SocketContext } from '../stores/SocketContext.jsx'
 import { getMessageFromUnknownError } from '../utils'
+import { retrieveIdentity } from '../services/seald'
 
 const SignIn: FC = () => {
   const theme = useTheme()
@@ -40,6 +41,11 @@ const SignIn: FC = () => {
         const emailAddress = formData.get('emailAddress') as string
         const password = formData.get('password') as string
         const currentUser = await User.login({ emailAddress, password })
+        const sealdId = await retrieveIdentity({
+          userId: currentUser.id,
+          password
+        })
+        currentUser.sealdId = sealdId
         dispatch({ type: SocketActionKind.SET_AUTH, payload: { currentUser } })
         dispatch({
           type: SocketActionKind.SET_ROOMS,

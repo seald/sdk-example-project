@@ -45,10 +45,15 @@ export interface LoginType {
   password: string
 }
 
+export interface SetSealdIdType {
+  sealdId: string
+}
+
 export interface UserType {
   id: string
   name: string
   emailAddress: string
+  sealdId: string
 }
 
 export interface RoomType {
@@ -102,15 +107,17 @@ const APIClient = (baseURL?: string) => {
     rest: {
       account: {
         status: async (): Promise<{ user: UserType }> => await GET<{ user: UserType }>('/account'),
-        create: async (body: CreateAccountType): Promise<{ user: UserType }> => await POST<CreateAccountType, {
+        create: async (body: CreateAccountType): Promise<{ user: UserType, signupJWT: string }> => await POST<CreateAccountType, {
           user: UserType
+          signupJWT: string
         }>('/account', body),
         login: async (body: LoginType): Promise<{ user: UserType }> => await POST<LoginType, {
           user: UserType
         }>('/account/login', body),
         logout: async (): Promise<{ detail: 'Successfully logged out' }> => await GET<{
           detail: 'Successfully logged out'
-        }>('/account/logout')
+        }>('/account/logout'),
+        setSealdId: async (body: SetSealdIdType) => await POST<SetSealdIdType, SetSealdIdType>('/account/sealdId', body)
       },
       rooms: {
         list: async (): Promise<{ rooms: RoomType[] }> => await GET<{ rooms: RoomType[] }>('/rooms'),
@@ -247,11 +254,15 @@ export class User {
   readonly id: string
   readonly name: string
   readonly emailAddress: string
+  sealdId?: string
+  readonly signupJWT?: string
 
-  constructor ({ id, name, emailAddress }: { id: string, name: string, emailAddress: string }) {
+  constructor ({ id, name, emailAddress, sealdId, signupJWT }: { id: string, name: string, emailAddress: string, sealdId?: string, signupJWT?: string }) {
     this.id = id
     this.name = name
     this.emailAddress = emailAddress
+    if (sealdId != null) this.sealdId = sealdId // is not defined before Seald identity creation
+    if (signupJWT != null) this.signupJWT = signupJWT // only for currentUser, and on sign-up only
   }
 
   static async list (): Promise<User[]> {
@@ -259,7 +270,7 @@ export class User {
   }
 
   static async createAccount ({ emailAddress, password, name }: CreateAccountType): Promise<User> {
-    const { user: { id } } = await apiClient.rest.account.create({
+    const { user: { id }, signupJWT } = await apiClient.rest.account.create({
       emailAddress,
       password,
       name
@@ -267,30 +278,38 @@ export class User {
     currentUser = new this({
       id,
       emailAddress,
-      name
+      name,
+      signupJWT
     })
     return currentUser
   }
 
+  async setSealdId (sealdId: string): Promise<void> {
+    await apiClient.rest.account.setSealdId({ sealdId })
+    this.sealdId = sealdId
+  }
+
   static async login ({ emailAddress, password }: LoginType): Promise<User> {
-    const { user: { id, name } } = await apiClient.rest.account.login({
+    const { user: { id, name, sealdId } } = await apiClient.rest.account.login({
       emailAddress,
       password
     })
     currentUser = new this({
       id,
       emailAddress,
-      name
+      name,
+      sealdId
     })
     return currentUser
   }
 
   static async updateCurrentUser (): Promise<User> {
-    const { user: { id, emailAddress, name } } = await apiClient.rest.account.status()
+    const { user: { id, emailAddress, name, sealdId } } = await apiClient.rest.account.status()
     currentUser = new this({
       id,
       emailAddress,
-      name
+      name,
+      sealdId
     })
     return currentUser
   }

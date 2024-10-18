@@ -21,11 +21,17 @@ class User extends Model {
     return super.create({ emailAddress, name, hashedPassword: await hashPassword(password) })
   }
 
+  async setSealdId (sealdId) {
+    this.sealdId = sealdId
+    await this.save()
+  }
+
   serialize () {
     return {
       id: this.id,
       name: this.name,
-      emailAddress: this.emailAddress
+      emailAddress: this.emailAddress,
+      sealdId: this.sealdId
     }
   }
 }
@@ -36,6 +42,10 @@ User.init(
       type: DataTypes.UUID,
       defaultValue: Sequelize.UUIDV4,
       primaryKey: true
+    },
+    sealdId: {
+      type: DataTypes.STRING,
+      allowNull: true
     },
     name: {
       type: DataTypes.STRING,

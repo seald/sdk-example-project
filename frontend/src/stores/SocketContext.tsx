@@ -4,6 +4,7 @@ import reducer from './reducer/socket'
 import type { Socket } from 'socket.io-client'
 import type { MessageTypeAPI, Room, RoomType, User, UserType } from '../services/api.ts'
 import type { ActionsType } from './reducer/constants.ts'
+import type { EncryptionSession } from '@seald-io/sdk/browser'
 
 export interface ServerToClientEvents {
   'room:removed': (payload: { roomId: string }) => void | Promise<void>
@@ -44,6 +45,7 @@ export interface SocketContextType {
     name: string
     isLoading: boolean
     oldUsers: string[]
+    sealdSession: EncryptionSession | null
   }
 }
 
@@ -58,7 +60,8 @@ const initialState: SocketContextType = {
     selectedUsers: [],
     name: '',
     isLoading: false,
-    oldUsers: []
+    oldUsers: [],
+    sealdSession: null
   }
 }
 

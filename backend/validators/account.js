@@ -14,3 +14,9 @@ export const loginValidator = {
     password: Joi.string().required().max(255)
   })
 }
+
+export const sealdIdValidator = {
+  body: Joi.object({
+    sealdId: Joi.string().required().max(255)
+  })
+}

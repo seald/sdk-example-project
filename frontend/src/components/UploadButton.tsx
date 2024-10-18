@@ -1,9 +1,11 @@
+/* eslint-env browser */
 import { type ChangeEvent, type FC, useEffect, useRef, useState } from 'react'
 import { IconButton, CircularProgress } from '@mui/material'
 import AttachIcon from '@mui/icons-material/AttachFile'
 import { type Room, uploadFile } from '../services/api'
+import type { EncryptionSession } from '@seald-io/sdk/browser'
 
-const UploadButton: FC<{ room: Room | null }> = ({ room }) => {
+const UploadButton: FC<{ room: Room | null, sealdSession: EncryptionSession }> = ({ room, sealdSession }) => {
   const [isUploading, setIsUploading] = useState(false)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const fileUploadRef = useRef<HTMLInputElement>(null)
@@ -13,8 +15,15 @@ const UploadButton: FC<{ room: Room | null }> = ({ room }) => {
       if (room != null && selectedFiles.length > 0) {
         setIsUploading(true)
         try {
-          // Upload selectedFile[0]
-          const { uploadId } = await uploadFile(selectedFiles[0])
+          // Encrypt file
+          const encryptedBlob: Blob = await sealdSession.encryptFile(
+            selectedFiles[0],
+            selectedFiles[0].name,
+            { fileSize: selectedFiles[0].size }
+          )
+          const encryptedFile = new File([encryptedBlob], selectedFiles[0].name)
+          // Upload Encrypted file
+          const { uploadId } = await uploadFile(encryptedFile)
           // Send message to room
           await room.postMessage('--FILE--', uploadId)
         } finally {
@@ -23,7 +32,7 @@ const UploadButton: FC<{ room: Room | null }> = ({ room }) => {
         }
       }
     })()
-  }, [room, selectedFiles])
+  }, [room, sealdSession, selectedFiles])
 
   const handleUploadClick = (): void => {
     fileUploadRef.current?.click()

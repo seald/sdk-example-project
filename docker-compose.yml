@@ -8,6 +8,7 @@ services:
       - '80:80'
     volumes:
       - "sqlite:/backend/sqlite/:ro"
+      - "./frontend/public/settings.json:/usr/share/nginx/html/settings.json:ro"
 
   backend:
     build: ./backend
