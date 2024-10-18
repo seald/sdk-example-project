@@ -1,0 +1,4 @@
+{
+  "HTTPS_ENABLED": false,
+  "SESSION_SECRET": "SuperSecretSessionSecret"
+}
